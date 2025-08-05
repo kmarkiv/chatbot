@@ -40,7 +40,7 @@ else:
             st.markdown(prompt)
 
         # Generate a response using the OpenAI API.
-         stream = client.responses.create(
+        stream = client.responses.create(
              prompt={ "id": "pmpt_688a0932291c81979cdf4f746bd3017906dee59b395d64c8", "version": "5" },
             input=[
                 {"role": m["role"], "content": m["content"]}
