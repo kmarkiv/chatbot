@@ -48,7 +48,12 @@ else:
             stream=False,
         )
         #print(stream)
-        assistant_response = stream.output[0].content[0].text
+        #assistant_response = stream.output[0].content[0].text
+        for item in stream.output:
+            if item.__class__.__name__ == "ResponseOutputMessage":
+                for content in item.content:
+                    if content.__class__.__name__ == "ResponseOutputText":
+                        assistant_response = content.text
 
         # Stream the response to the chat using `st.write_stream`, then store it in 
         # session state.
