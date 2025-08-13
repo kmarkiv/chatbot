@@ -5,7 +5,7 @@ from openai import OpenAI
 st.title("💬 Mental Health Chatbot")
 st.write(
     "This is a simple chatbot that uses OpenAI's backend and GV's database to generate responses. "
-   )
+)
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
