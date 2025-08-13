@@ -39,7 +39,7 @@ else:
 
         # Generate a response using the OpenAI API.
         stream = client.responses.create(
-            prompt={ "id": st.secrets["srhr_prompt_id"], "version": st.secrets["srhr_version"] },
+            prompt={ "id": st.secrets["srhr_prompt_id"], "version": 5 },
             input=[
                 {"role": m["role"], "content": m["content"]}
                 for m in st.session_state.messages
