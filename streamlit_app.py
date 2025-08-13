@@ -4,7 +4,7 @@ from openai import OpenAI
 # Show title and description.
 st.title("💬 Mental Health Chatbot")
 st.write(
-    "This is a simple chatbot that uses OpenAI's model and a knowledge base")
+    "This is a simple chatbot that uses OpenAI's model and a knowledge base v"+st.secrets["srhr_version"])
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
@@ -40,7 +40,7 @@ else:
         # Generate a response using the OpenAI API.
         stream = client.responses.create(
             #prompt={ "id": "pmpt_688a0932291c81979cdf4f746bd3017906dee59b395d64c8", "version": "5" },
-            prompt={ "id": st.secrets["srhr_prompt_id"], "version": 5 },
+            prompt={ "id": st.secrets["srhr_prompt_id"], "version": st.secrets["srhr_version"] },
             input=[
                 {"role": m["role"], "content": m["content"]}
                 for m in st.session_state.messages
