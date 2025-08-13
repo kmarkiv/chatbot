@@ -47,12 +47,14 @@ else:
                 {"role": m["role"], "content": m["content"]}
                 for m in st.session_state.messages
             ],
-            stream=True,
+            stream=False,
         )
         #print(stream)
+        assistant_response = stream.output[0].content[0].text
 
         # Stream the response to the chat using `st.write_stream`, then store it in 
         # session state.
         with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            st.session_state.messages.append({"role": "assistant", "content": assistant_response})
+            st.markdown(assistant_response)
+        #st.session_state.messages.append({"role": "assistant", "content": response})
