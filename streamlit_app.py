@@ -2,9 +2,13 @@ import streamlit as st
 from openai import OpenAI
 
 # Show title and description.
-st.title("💬 Mental Health Chatbot")
+st.title("💬 Dr. Didi — Conversational Support for Sexual & Mental Health")
 st.write(
-    "This is a simple chatbot that uses OpenAI's model and a knowledge base v"+st.secrets["srhr_version"])
+    "An chatbot built to provide accurate, accessible, and respectful "
+    "information for sexual and mental wellness. "
+    "Version: " + st.secrets["srhr_version"]
+)
+
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
