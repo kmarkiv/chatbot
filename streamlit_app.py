@@ -2,7 +2,7 @@ import streamlit as st
 from openai import OpenAI
 
 # Show title and description.
-st.title("💬 Dr. Didi — Chatbot for Sexual & Mental Health")
+st.title("💬 Dr. Didi — Chatbot")
 st.write(
     "A chatbot to provide reliable "
     "information for sexual and mental wellness. "
