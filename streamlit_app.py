@@ -1,67 +1,102 @@
 import streamlit as st
+import json
 from openai import OpenAI
 
-# Show title and description.
 st.title("💬 Mann Sakhi — Chatbot")
 st.write(
-    "A chatbot to provide reliable "
-    "information for sexual and mental wellness. "
+    "A chatbot to provide reliable information for sexual and mental wellness. "
     "V: " + st.secrets["srhr_version"]
 )
 
+language_options = {
+    "हिन्दी (Hindi)": "Hindi",
+    "English": "English",
+    "தமிழ் (Tamil)": "Tamil"
+}
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-#openai_api_key = st.text_input("OpenAI API Key", type="password")
+selected_label = st.selectbox(
+    "Choose language / भाषा चुनें / மொழியைத் தேர்ந்தெடுக்கவும்",
+    list(language_options.keys())
+)
+
+language = language_options[selected_label]
+
 openai_api_key = st.secrets["openai_api_key"]
+
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
 
-    # Create an OpenAI client.
+else:
     client = OpenAI(api_key=openai_api_key)
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Display the existing chat messages via `st.chat_message`.
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+    if prompt := st.chat_input("अपना सवाल लिखें / Ask your question / உங்கள் கேள்வியை எழுதுங்கள்"):
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append({
+            "role": "user",
+            "content": prompt
+        })
+
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generate a response using the OpenAI API.
-        stream = client.responses.create(
-            #prompt={ "id": "pmpt_688a0932291c81979cdf4f746bd3017906dee59b395d64c8", "version": "5" },
-            prompt={ "id": st.secrets["srhr_prompt_id"], "version": st.secrets["srhr_version"] },
+        response = client.responses.create(
+            prompt={
+                "id": st.secrets["srhr_prompt_id"],
+                "version": st.secrets["srhr_version"]
+            },
             input=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
+                {
+                    "role": "system",
+                    "content": (
+                        f"Respond only in {language}. "
+                        "Keep the Mann Sakhi tone. "
+                        "Return only one JSON object. "
+                        "Keep JSON keys in English."
+                    )
+                },
+                *[
+                    {"role": m["role"], "content": m["content"]}
+                    for m in st.session_state.messages
+                ]
             ],
             stream=False,
         )
-        #print(stream)
-        #assistant_response = stream.output[0].content[0].text
-        for item in stream.output:
-            if item.__class__.__name__ == "ResponseOutputMessage":
-                for content in item.content:
-                    if content.__class__.__name__ == "ResponseOutputText":
-                        assistant_response = content.text
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
+        raw_text = response.output_text.strip()
+
+        try:
+            parsed = json.loads(raw_text)
+
+            assistant_response = parsed.get("response", raw_text)
+            confidence = parsed.get("confidence", None)
+            sources = parsed.get("sources", [])
+            theme = parsed.get("theme", "")
+            in_kb = parsed.get("in_knowledge_base", False)
+
+        except json.JSONDecodeError:
+            assistant_response = raw_text
+            confidence = None
+            sources = []
+            theme = ""
+            in_kb = False
+
         with st.chat_message("assistant"):
-            st.session_state.messages.append({"role": "assistant", "content": assistant_response})
             st.markdown(assistant_response)
-        #st.session_state.messages.append({"role": "assistant", "content": response})
+
+            with st.expander("Response details"):
+                st.write("Theme:", theme)
+                st.write("Confidence:", confidence)
+                st.write("In knowledge base:", in_kb)
+                st.write("Sources:", sources)
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": assistant_response
+        })
