@@ -1,8 +1,8 @@
 import streamlit as st
 import json
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 
-st.title("💬 Mann Sakhi — Chatbot")
+st.title("💬 Mann Sakhi — Chatbot -v2")
 st.write(
     "A chatbot to provide reliable information for sexual and mental wellness. "
     "V: " + st.secrets["srhr_version"]
@@ -25,7 +25,6 @@ openai_api_key = st.secrets["openai_api_key"]
 
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-
 else:
     client = OpenAI(api_key=openai_api_key)
 
@@ -46,57 +45,65 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        response = client.responses.create(
-            prompt={
-                "id": st.secrets["srhr_prompt_id"],
-                "version": st.secrets["srhr_version"]
-            },
-            input=[
-                {
-                    "role": "system",
-                    "content": (
-                        f"Respond only in {language}. "
-                        "Keep the Mann Sakhi tone. "
-                        "Return only one JSON object. "
-                        "Keep JSON keys in English."
-                    )
-                },
-                *[
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages
-                ]
-            ],
-            stream=False,
-        )
-
-        raw_text = response.output_text.strip()
-
         try:
-            parsed = json.loads(raw_text)
+            language_instruction = (
+                f"Selected language: {language}. "
+                "Respond only in this language. "
+                "Keep JSON keys in English. "
+                "Return only one JSON object."
+            )
 
-            assistant_response = parsed.get("response", raw_text)
-            confidence = parsed.get("confidence", None)
-            sources = parsed.get("sources", [])
-            theme = parsed.get("theme", "")
-            in_kb = parsed.get("in_knowledge_base", False)
+            input_messages = [
+                {
+                    "role": "user",
+                    "content": language_instruction
+                }
+            ] + [
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages
+            ]
 
-        except json.JSONDecodeError:
-            assistant_response = raw_text
-            confidence = None
-            sources = []
-            theme = ""
-            in_kb = False
+            response = client.responses.create(
+                prompt={
+                    "id": st.secrets["srhr_prompt_id"],
+                    "version": st.secrets["srhr_version"]
+                },
+                input=input_messages,
+                stream=False,
+            )
 
-        with st.chat_message("assistant"):
-            st.markdown(assistant_response)
+            raw_text = response.output_text.strip()
 
-            with st.expander("Response details"):
-                st.write("Theme:", theme)
-                st.write("Confidence:", confidence)
-                st.write("In knowledge base:", in_kb)
-                st.write("Sources:", sources)
+            try:
+                parsed = json.loads(raw_text)
 
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": assistant_response
-        })
+                assistant_response = parsed.get("response", raw_text)
+                confidence = parsed.get("confidence", None)
+                sources = parsed.get("sources", [])
+                theme = parsed.get("theme", "")
+                in_kb = parsed.get("in_knowledge_base", False)
+
+            except json.JSONDecodeError:
+                assistant_response = raw_text
+                confidence = None
+                sources = []
+                theme = ""
+                in_kb = False
+
+            with st.chat_message("assistant"):
+                st.markdown(assistant_response)
+
+                with st.expander("Response details"):
+                    st.write("Theme:", theme)
+                    st.write("Confidence:", confidence)
+                    st.write("In knowledge base:", in_kb)
+                    st.write("Sources:", sources)
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": assistant_response
+            })
+
+        except BadRequestError as e:
+            st.error("OpenAI BadRequestError")
+            st.write(str(e))
