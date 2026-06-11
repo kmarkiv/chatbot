@@ -55,6 +55,7 @@ else:
                     "id": st.secrets["srhr_prompt_id"],
                     "version": st.secrets["srhr_version"],
                     "variables": {
+                        "language": language,
                         "user_message": prompt,
                         "subtype": "general",
                         "last_theme": st.session_state.last_theme,
@@ -62,17 +63,6 @@ else:
                         "mode": "general"
                     }
                 },
-                input=[
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Selected language: {language}. "
-                            "Respond only in this language. "
-                            "Keep JSON keys in English. "
-                            "Return only one JSON object."
-                        )
-                    }
-                ],
                 stream=False,
             )
 
