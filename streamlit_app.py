@@ -2,7 +2,7 @@ import streamlit as st
 import json
 from openai import OpenAI, BadRequestError
 
-st.title("💬 Mann Sakhi — Chatbot -v2")
+st.title("💬 Mann Sakhi — Chatbot")
 st.write(
     "A chatbot to provide reliable information for sexual and mental wellness. "
     "V: " + st.secrets["srhr_version"]
@@ -25,11 +25,15 @@ openai_api_key = st.secrets["openai_api_key"]
 
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
+
 else:
     client = OpenAI(api_key=openai_api_key)
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
+    if "last_theme" not in st.session_state:
+        st.session_state.last_theme = ""
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -46,29 +50,29 @@ else:
             st.markdown(prompt)
 
         try:
-            language_instruction = (
-                f"Selected language: {language}. "
-                "Respond only in this language. "
-                "Keep JSON keys in English. "
-                "Return only one JSON object."
-            )
-
-            input_messages = [
-                {
-                    "role": "user",
-                    "content": language_instruction
-                }
-            ] + [
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ]
-
             response = client.responses.create(
                 prompt={
                     "id": st.secrets["srhr_prompt_id"],
-                    "version": st.secrets["srhr_version"]
+                    "version": st.secrets["srhr_version"],
+                    "variables": {
+                        "user_message": prompt,
+                        "subtype": "general",
+                        "last_theme": st.session_state.last_theme,
+                        "kb_context": "",
+                        "mode": "general"
+                    }
                 },
-                input=input_messages,
+                input=[
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Selected language: {language}. "
+                            "Respond only in this language. "
+                            "Keep JSON keys in English. "
+                            "Return only one JSON object."
+                        )
+                    }
+                ],
                 stream=False,
             )
 
@@ -82,6 +86,8 @@ else:
                 sources = parsed.get("sources", [])
                 theme = parsed.get("theme", "")
                 in_kb = parsed.get("in_knowledge_base", False)
+
+                st.session_state.last_theme = theme
 
             except json.JSONDecodeError:
                 assistant_response = raw_text
